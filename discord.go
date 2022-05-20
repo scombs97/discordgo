@@ -15,6 +15,7 @@ package discordgo
 
 import (
 	"net/http"
+	"net/url"
 	"runtime"
 	"time"
 )
@@ -44,6 +45,42 @@ func New(token string) (s *Session, err error) {
 		UserAgent:              "DiscordBot (https://github.com/bwmarrin/discordgo, v" + VERSION + ")",
 		sequence:               new(int64),
 		LastHeartbeatAck:       time.Now().UTC(),
+	}
+
+	// Initilize the Identify Package with defaults
+	// These can be modified prior to calling Open()
+	s.Identify.Compress = true
+	s.Identify.LargeThreshold = 250
+	s.Identify.Properties.OS = runtime.GOOS
+	s.Identify.Properties.Browser = "DiscordGo v" + VERSION
+	s.Identify.Intents = IntentsAllWithoutPrivileged
+	s.Identify.Token = token
+	s.Token = token
+
+	return
+}
+
+func NewWithProxy(token string, proxy string) (s *Session, err error) {
+	proxyURL, _ := url.Parse(proxy)
+
+	// Create an empty Session interface.
+	s = &Session{
+		State:                  NewState(),
+		Ratelimiter:            NewRatelimiter(),
+		StateEnabled:           true,
+		Compress:               true,
+		ShouldReconnectOnError: true,
+		ShouldRetryOnRateLimit: true,
+		ShardID:                0,
+		ShardCount:             1,
+		MaxRestRetries:         3,
+		Client: &http.Client{
+			Timeout:   (20 * time.Second),
+			Transport: &http.Transport{Proxy: http.ProxyURL(proxyURL)},
+		},
+		UserAgent:        "DiscordBot (https://github.com/bwmarrin/discordgo, v" + VERSION + ")",
+		sequence:         new(int64),
+		LastHeartbeatAck: time.Now().UTC(),
 	}
 
 	// Initilize the Identify Package with defaults
